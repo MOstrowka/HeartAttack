@@ -1,4 +1,3 @@
-import os
 from sklearn.model_selection import cross_val_predict, GridSearchCV
 from utils import save_best_params_to_file
 

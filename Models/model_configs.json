@@ -19,5 +19,15 @@
             "colsample_bytree": [0.75, 0.8, 0.85],
             "gamma": [0, 0.01, 0.05]
         }
+    },
+    "SVC": {
+        "model": "SVC",
+        "params": {
+            "C": [0.1, 0.115, 0.125, 0.135, 0.15],
+            "kernel": ["linear"],
+            "gamma": ["scale", "auto"],
+            "degree": [2],
+            "class_weight": [null, "balanced"]
+        }
     }
 }
