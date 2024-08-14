@@ -1,0 +1,12 @@
+{
+    "LogisticRegression": {
+        "model": "LogisticRegression",
+        "params": {
+            "C": 0.055,
+            "l1_ratio": 0.8,
+            "max_iter": 80,
+            "penalty": "elasticnet",
+            "solver": "saga"
+        }
+    }
+}
