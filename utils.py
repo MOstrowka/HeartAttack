@@ -1,7 +1,9 @@
 import os
 import json
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, roc_curve, auc
 
 def calculate_metrics(y_true, y_pred, y_pred_proba):
     metrics = {
@@ -60,3 +62,29 @@ def save_best_params_to_file(model_name, best_params, output_dir='Models/BestPar
 def load_model_configs(file_path):
     with open(file_path, 'r') as f:
         return json.load(f)
+
+def plot_confusion_matrix(y_true, y_pred, title, output_path):
+    conf_matrix = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", cbar=False)
+    plt.title(title)
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.savefig(output_path)
+    plt.close()
+
+def plot_roc_curve(y_true, y_pred_proba, title, output_path):
+    fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure(figsize=(10, 7))
+    plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.savefig(output_path)
+    plt.close()

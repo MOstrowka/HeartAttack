@@ -1,5 +1,6 @@
 from sklearn.model_selection import cross_val_predict, GridSearchCV
-from utils import save_best_params_to_file
+from utils import save_best_params_to_file, plot_confusion_matrix, plot_roc_curve
+import os
 
 def train_sklearn_model(model, X, y, params=None, cv=5):
     """
@@ -27,6 +28,11 @@ def train_sklearn_model(model, X, y, params=None, cv=5):
     # Predict values using cross-validation
     y_pred = cross_val_predict(model, X, y, cv=cv, method='predict')
     y_pred_proba = cross_val_predict(model, X, y, cv=cv, method='predict_proba')[:, 1]
+
+    # Generate and save confusion matrix and ROC curve
+    os.makedirs('Results', exist_ok=True)
+    plot_confusion_matrix(y, y_pred, title=f"{model.__class__.__name__} Confusion Matrix", output_path=os.path.join('Results', f"{model.__class__.__name__}_confusion_matrix.png"))
+    plot_roc_curve(y, y_pred_proba, title=f"{model.__class__.__name__} ROC Curve", output_path=os.path.join('Results', f"{model.__class__.__name__}_roc_curve.png"))
 
     # Return the model and predictions
     return model, y_pred, y_pred_proba, model.__class__.__name__
