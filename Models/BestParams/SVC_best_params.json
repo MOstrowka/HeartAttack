@@ -1,0 +1,12 @@
+{
+    "SVC": {
+        "model": "SVC",
+        "params": {
+            "C": 0.125,
+            "class_weight": null,
+            "degree": 2,
+            "gamma": "scale",
+            "kernel": "linear"
+        }
+    }
+}
