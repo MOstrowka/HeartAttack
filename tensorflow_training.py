@@ -10,7 +10,11 @@ from collections import Counter
 from utils import evaluate_and_save_results, save_best_params_to_file, plot_confusion_matrix, plot_roc_curve
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import os
+import numpy as np
 
+# Ustawienie globalnego random state
+np.random.seed(42)
+tf.random.set_seed(42)
 
 # Function to build the model using HyperParameters
 def build_model(hp):
@@ -51,7 +55,8 @@ def train_tensorflow_model(X, y):
         executions_per_trial=1,
         overwrite=True,
         directory='tuner_results',
-        project_name='HeartAttack'
+        project_name='HeartAttack',
+        seed=42
     )
 
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -100,6 +105,8 @@ def train_tensorflow_model(X, y):
     roc_auc = roc_auc_score(all_y_true, all_y_pred_proba)
 
     with mlflow.start_run(run_name="Neural_Network_model"):
+        mlflow.log_params(best_trial.hyperparameters.values)
+
         mlflow.log_metrics({
             "accuracy": accuracy,
             "precision": precision,
@@ -108,7 +115,6 @@ def train_tensorflow_model(X, y):
             "roc_auc": roc_auc
         })
 
-        # Logowanie modelu bez input_example, aby uniknąć problemów
         mlflow.keras.log_model(best_model, "model")
 
         os.makedirs('Results', exist_ok=True)
