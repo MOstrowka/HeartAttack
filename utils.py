@@ -47,6 +47,12 @@ def save_best_params_to_file(model_name, best_params, output_dir='Models/BestPar
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'{model_name}_best_params.json')
 
+    # Jeśli model jest siecią neuronową, wyczyść parametry
+    if model_name == "NeuralNetwork":
+        num_layers = best_params.get('num_layers', 1)
+        best_params = {k: v for k, v in best_params.items() if 'units_' not in k or int(k.split('_')[1]) < num_layers}
+        best_params.update({k: v for k, v in best_params.items() if 'dropout_' not in k or int(k.split('_')[1]) < num_layers})
+
     data = {
         model_name: {
             "model": model_name,
@@ -58,6 +64,7 @@ def save_best_params_to_file(model_name, best_params, output_dir='Models/BestPar
         json.dump(data, f, indent=4)
 
     print(f"Best parameters of model {model_name} saved to {output_path}")
+
 
 def load_model_configs(file_path):
     with open(file_path, 'r') as f:

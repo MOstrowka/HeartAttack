@@ -1,0 +1,16 @@
+artifact_uri: file:///E:/MO/Python/Projects/HeartAttack/HeartAttack/mlruns/628461490290820050/6cf8be276b85476e80d5ef1d6addd796/artifacts
+deleted_time: 1723720571956
+end_time: 1723720355382
+entry_point_name: ''
+experiment_id: '628461490290820050'
+lifecycle_stage: deleted
+run_id: 6cf8be276b85476e80d5ef1d6addd796
+run_name: Neural_Network_model
+run_uuid: 6cf8be276b85476e80d5ef1d6addd796
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1723720355346
+status: 4
+tags: []
+user_id: Magdalena
