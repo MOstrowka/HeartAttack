@@ -1,23 +1,27 @@
+import os
 import keras_tuner as kt
+import mlflow
+import tensorflow as tf
 from sklearn.model_selection import StratifiedKFold
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
-import tensorflow as tf
-import pandas as pd
-import mlflow
 from collections import Counter
-from utils import evaluate_and_save_results, save_best_params_to_file, plot_confusion_matrix, plot_roc_curve
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-import os
-import numpy as np
+from utils import (
+    evaluate_and_save_results,
+    save_best_params_to_file,
+    calculate_metrics,
+    log_to_mlflow,
+    load_preprocessed_data
+)
 
-# Ustawienie globalnego random state
-np.random.seed(42)
-tf.random.set_seed(42)
-
-# Function to build the model using HyperParameters
 def build_model(hp):
+    """
+    Build a Keras model with hyperparameters.
+
+    :param hp: Hyperparameters from Keras Tuner.
+    :return: Compiled Keras model.
+    """
     model = Sequential()
     num_layers = hp.Int('num_layers', 1, 4)
     for i in range(num_layers):
@@ -30,9 +34,13 @@ def build_model(hp):
 
     return model
 
-
-# Function to determine the most common parameters
 def most_common_params(params_list):
+    """
+    Determine the most common parameters from a list of parameter sets.
+
+    :param params_list: List of parameter dictionaries.
+    :return: Dictionary of most common parameters.
+    """
     common_params = {}
     for key in params_list[0].keys():
         values = [params[key] for params in params_list]
@@ -40,23 +48,31 @@ def most_common_params(params_list):
         common_params[key] = most_common_value
 
     num_layers = common_params['num_layers']
-    filtered_params = {k: common_params[k] for k in common_params if
-                       ('units_' not in k and 'dropout_' not in k) or int(k.split('_')[1]) < num_layers}
+    filtered_params = {
+        key: value for key, value in common_params.items()
+        if ('units_' not in key and 'dropout_' not in key) or int(key.split('_')[1]) < num_layers
+    }
 
     return filtered_params
 
-
-# Function to train the TensorFlow model with MLflow integration
 def train_tensorflow_model(X, y):
+    """
+    Train a TensorFlow model using Keras Tuner and Stratified K-Fold cross-validation.
+
+    :param X: Features.
+    :param y: Labels.
+    :return: Best trained model and its parameters.
+    """
+    best_model = None
+
     tuner = kt.RandomSearch(
         build_model,
         objective='val_loss',
-        max_trials=300,
+        max_trials=10,
         executions_per_trial=3,
         overwrite=True,
         directory='tuner_results',
-        project_name='HeartAttack',
-        seed=42
+        project_name='HeartAttack'
     )
 
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -77,11 +93,9 @@ def train_tensorflow_model(X, y):
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
-        # Definicja batch_size jako hiperparametru
         hp = tuner.oracle.hyperparameters
         batch_size = hp.Int('batch_size', min_value=16, max_value=128, step=16)
 
-        # Wywołanie tunera z przeszukiwanym batch_size
         tuner.search(X_train, y_train, validation_data=(X_val, y_val), epochs=200, batch_size=batch_size, verbose=1,
                      callbacks=[early_stopping])
 
@@ -90,7 +104,6 @@ def train_tensorflow_model(X, y):
 
         best_model = tuner.get_best_models(num_models=1)[0]
 
-        # Przewidywanie bez dekorowania funkcji
         y_pred_proba = best_model.predict(X_val).flatten()
         y_pred = (y_pred_proba > 0.5).astype(int)
 
@@ -98,43 +111,17 @@ def train_tensorflow_model(X, y):
         all_y_pred_proba.extend(y_pred_proba)
         all_y_pred.extend(y_pred)
 
-    accuracy = accuracy_score(all_y_true, all_y_pred)
-    precision = precision_score(all_y_true, all_y_pred)
-    recall = recall_score(all_y_true, all_y_pred)
-    f1 = f1_score(all_y_true, all_y_pred)
-    roc_auc = roc_auc_score(all_y_true, all_y_pred_proba)
-
-    with mlflow.start_run(run_name="Neural_Network_model"):
-        mlflow.log_params(best_trial.hyperparameters.values)
-
-        mlflow.log_metrics({
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1_score": f1,
-            "roc_auc": roc_auc
-        })
-
-        mlflow.keras.log_model(best_model, "model")
-
-        os.makedirs('Results', exist_ok=True)
-        plot_confusion_matrix(all_y_true, all_y_pred, title="Neural Network confusion matrix",
-                              output_path=os.path.join('Results', "Neural_Network_confusion_matrix.png"))
-        plot_roc_curve(all_y_true, all_y_pred_proba, title="Neural Network ROC Curve",
-                       output_path=os.path.join('Results', "Neural_Network_roc_curve.png"))
-
-        if os.path.exists(os.path.join('Results', "Neural_Network_confusion_matrix.png")):
-            mlflow.log_artifact(os.path.join('Results', "Neural_Network_confusion_matrix.png"))
-        if os.path.exists(os.path.join('Results', "Neural_Network_roc_curve.png")):
-            mlflow.log_artifact(os.path.join('Results', "Neural_Network_roc_curve.png"))
-
+    metrics = calculate_metrics(all_y_true, all_y_pred, all_y_pred_proba)
     common_params = most_common_params([trial.hyperparameters.values for trial in best_trials])
+    log_to_mlflow(best_model, metrics, run_name="Neural_Network_model", params=common_params)
+
     return best_model, common_params
 
-
 def main():
-    X = pd.read_csv('Data/X_preprocessed.csv').values
-    y = pd.read_csv('Data/y_preprocessed.csv').values.ravel()
+    """
+    Main function to execute the TensorFlow model training.
+    """
+    X, y = load_preprocessed_data()
 
     best_model, best_params = train_tensorflow_model(X, y)
 
@@ -144,6 +131,18 @@ def main():
 
     save_best_params_to_file('NeuralNetwork', best_params)
 
+    # Ensure the directory exists before saving the model
+    model_save_dir = 'Models/SavedModels'
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+        print(f"Directory {model_save_dir} created.")
+    else:
+        print(f"Directory {model_save_dir} already exists.")
+
+    # Save the best model in .keras format
+    model_save_path = os.path.join(model_save_dir, 'NeuralNetwork_best_model.keras')
+    best_model.save(model_save_path)
+    print(f"Model saved to {model_save_path}")
 
 if __name__ == "__main__":
     main()

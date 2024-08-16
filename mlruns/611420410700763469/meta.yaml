@@ -1,6 +1,0 @@
-artifact_location: file:///E:/MO/Python/Projects/HeartAttack/mlruns/611420410700763469
-creation_time: 1723727503426
-experiment_id: '611420410700763469'
-last_update_time: 1723727503426
-lifecycle_stage: active
-name: KerasTuner_Optimization
