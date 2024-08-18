@@ -3,10 +3,11 @@ import json
 import mlflow
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, \
     roc_curve, auc
-
+from mlflow.models import infer_signature
 
 def load_preprocessed_data():
     """
@@ -14,10 +15,9 @@ def load_preprocessed_data():
 
     :return: Tuple of features (X) and labels (y).
     """
-    X = pd.read_csv('Data/X_preprocessed.csv').values
+    X = pd.read_csv('Data/X_preprocessed.csv')
     y = pd.read_csv('Data/y_preprocessed.csv').values.ravel()
     return X, y
-
 
 def load_model_configs(config_file):
     """
@@ -29,7 +29,6 @@ def load_model_configs(config_file):
     with open(config_file, 'r') as file:
         model_configs = json.load(file)
     return model_configs
-
 
 def calculate_metrics(y_true, y_pred, y_pred_proba):
     """
@@ -49,8 +48,7 @@ def calculate_metrics(y_true, y_pred, y_pred_proba):
     }
     return metrics
 
-
-def log_to_mlflow(model, metrics, run_name="Model", params=None):
+def log_to_mlflow(model, metrics, run_name="Model", params=None, X_example=None):
     """
     Log model, metrics, and parameters to MLflow.
 
@@ -58,18 +56,20 @@ def log_to_mlflow(model, metrics, run_name="Model", params=None):
     :param metrics: Dictionary of calculated metrics.
     :param run_name: Name of the MLflow run.
     :param params: Dictionary of model parameters.
+    :param X_example: Example input data for generating model signature.
     """
     with mlflow.start_run(run_name=run_name):
         mlflow.log_metrics(metrics)
         if params:
             mlflow.log_params(params)
 
-        # Log the model
-        if hasattr(model, 'save'):
-            mlflow.keras.log_model(model, "model")
+        # Log the model with or without input example
+        if X_example is not None:
+            y_example = model.predict(X_example)
+            signature = infer_signature(X_example, y_example)
+            mlflow.keras.log_model(model, "model", signature=signature, input_example=X_example)
         else:
-            mlflow.sklearn.log_model(model, "model")
-
+            mlflow.keras.log_model(model, "model")
 
 def save_best_params_to_file(model_name, best_params):
     """
@@ -84,7 +84,6 @@ def save_best_params_to_file(model_name, best_params):
     with open(file_path, 'w') as file:
         json.dump(best_params, file)
     print(f"Best parameters of model {model_name} saved to {file_path}")
-
 
 def evaluate_and_save_results(model_name, y_true, y_pred, y_pred_proba):
     """
@@ -120,9 +119,8 @@ def evaluate_and_save_results(model_name, y_true, y_pred, y_pred_proba):
     # Save confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     plt.figure(figsize=(8, 6))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=True, linewidths=.5)
     plt.title(f'{model_name} Confusion Matrix')
-    plt.colorbar()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.savefig(os.path.join(results_dir, f'{model_name}_confusion_matrix.png'))

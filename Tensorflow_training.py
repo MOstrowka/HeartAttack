@@ -7,6 +7,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from collections import Counter
+import tempfile
 from utils import (
     evaluate_and_save_results,
     save_best_params_to_file,
@@ -68,8 +69,8 @@ def train_tensorflow_model(X, y):
     tuner = kt.RandomSearch(
         build_model,
         objective='val_loss',
-        max_trials=10,
-        executions_per_trial=3,
+        max_trials=5,
+        executions_per_trial=1,
         overwrite=True,
         directory='tuner_results',
         project_name='HeartAttack'
@@ -88,7 +89,7 @@ def train_tensorflow_model(X, y):
     all_y_pred = []
 
     for fold_no, (train_index, val_index) in enumerate(kfold.split(X, y), 1):
-        X_train, X_val = X[train_index], X[val_index]
+        X_train, X_val = X.iloc[train_index], X.iloc[val_index]
         y_train, y_val = y[train_index], y[val_index]
 
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
@@ -115,6 +116,22 @@ def train_tensorflow_model(X, y):
     common_params = most_common_params([trial.hyperparameters.values for trial in best_trials])
     log_to_mlflow(best_model, metrics, run_name="Neural_Network_model", params=common_params)
 
+    # Save the best model in .keras format, without including optimizer
+    model_save_dir = 'Models/SavedModels'
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+        print(f"Directory {model_save_dir} created.")
+    else:
+        print(f"Directory {model_save_dir} already exists.")
+
+    model_save_path = os.path.join(model_save_dir, 'NeuralNetwork_best_model.keras')
+    best_model.save(model_save_path, include_optimizer=False)
+    print(f"Model saved to {model_save_path}")
+
+    # Ensure the directory exists before saving input example
+    temp_dir = tempfile.mkdtemp()
+    mlflow.keras.log_model(best_model, artifact_path=os.path.join(temp_dir, "NeuralNetwork_best_model"))
+
     return best_model, common_params
 
 def main():
@@ -130,19 +147,6 @@ def main():
     evaluate_and_save_results('NeuralNetwork', y, y_pred, y_pred_proba)
 
     save_best_params_to_file('NeuralNetwork', best_params)
-
-    # Ensure the directory exists before saving the model
-    model_save_dir = 'Models/SavedModels'
-    if not os.path.exists(model_save_dir):
-        os.makedirs(model_save_dir)
-        print(f"Directory {model_save_dir} created.")
-    else:
-        print(f"Directory {model_save_dir} already exists.")
-
-    # Save the best model in .keras format
-    model_save_path = os.path.join(model_save_dir, 'NeuralNetwork_best_model.keras')
-    best_model.save(model_save_path)
-    print(f"Model saved to {model_save_path}")
 
 if __name__ == "__main__":
     main()

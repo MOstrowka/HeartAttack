@@ -142,13 +142,15 @@ def preprocess_data(df, output_dir="Data"):
 
     # Standardize the features
     scaler = StandardScaler()
-    X = scaler.fit_transform(X)
+    X_scaled = scaler.fit_transform(X)
     y = y.to_numpy()
 
-    # Save preprocessed data
+    # Save preprocessed data with column names for X
     X_file_path = os.path.join(output_dir, 'X_preprocessed.csv')
     y_file_path = os.path.join(output_dir, 'y_preprocessed.csv')
-    pd.DataFrame(X).to_csv(X_file_path, index=False)
+
+    # Here, we use the original column names
+    pd.DataFrame(X_scaled, columns=X.columns).to_csv(X_file_path, index=False)
     pd.DataFrame(y, columns=['HeartAttackRisk']).to_csv(y_file_path, index=False)
 
     print(f"Preprocessing complete. Preprocessed data saved to {X_file_path} and {y_file_path}\n")
