@@ -50,26 +50,33 @@ def calculate_metrics(y_true, y_pred, y_pred_proba):
 
 def log_to_mlflow(model, metrics, run_name="Model", params=None, X_example=None):
     """
-    Log model, metrics, and parameters to MLflow.
+    Logowanie modelu, metryk i parametrów w MLflow.
 
-    :param model: Trained model object.
-    :param metrics: Dictionary of calculated metrics.
-    :param run_name: Name of the MLflow run.
-    :param params: Dictionary of model parameters.
-    :param X_example: Example input data for generating model signature.
+    :param model: Wytrenowany model.
+    :param metrics: Słownik z obliczonymi metrykami.
+    :param run_name: Nazwa uruchomienia MLflow.
+    :param params: Słownik z parametrami modelu.
+    :param X_example: Przykładowe dane wejściowe do generowania sygnatury modelu.
     """
     with mlflow.start_run(run_name=run_name):
         mlflow.log_metrics(metrics)
         if params:
             mlflow.log_params(params)
 
-        # Log the model with or without input example
-        if X_example is not None:
-            y_example = model.predict(X_example)
-            signature = infer_signature(X_example, y_example)
-            mlflow.keras.log_model(model, "model", signature=signature, input_example=X_example)
+        # Logowanie modelu Keras
+        if hasattr(model, 'save'):
+            if X_example is not None:
+                y_example = model.predict(X_example)
+                signature = infer_signature(X_example, y_example)
+                mlflow.keras.log_model(model, "model", signature=signature, input_example=X_example)
+            else:
+                mlflow.keras.log_model(model, "model")
+        # Logowanie modelu scikit-learn
+        elif hasattr(model, 'predict'):
+            mlflow.sklearn.log_model(model, "model")
         else:
-            mlflow.keras.log_model(model, "model")
+            raise TypeError("Nieznany typ modelu. Model musi być zgodny z API scikit-learn lub Keras.")
+
 
 def save_best_params_to_file(model_name, best_params):
     """
