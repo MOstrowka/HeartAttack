@@ -41,6 +41,8 @@ The `Results` folder holds the evaluation metrics and visualizations for all tra
 
 ## Summary
 
-The project employs multiple machine learning models to predict the risk of heart attack, including Logistic Regression, Support Vector Classifier (SVC), XGBoost, and a Neural Network. After evaluating the performance of all models, the Neural Network was found to be the most effective, achieving the highest accuracy (91.5%) and best performance metrics (check metrics.xlsx for details).
+The project employs multiple machine learning models to predict the risk of heart attack, including Logistic Regression, Support Vector Classifier (SVC), XGBoost, and a Neural Network. After evaluating the performance of all models, the Neural Network was found to be the most effective, achieving the highest accuracy (91.5%) and the best performance metrics (see metrics.xlsx for details).
+
+The metrics were calculated as the average of 5-fold cross-validation (for scikit-learn models) or 5-fold KFold cross-validation (for TensorFlow).
 
 The hyperparameters for the Neural Network were optimized using Keras Tuner, which allowed for a thorough search across a range of possible configurations, resulting in the best-performing model.
