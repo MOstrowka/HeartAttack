@@ -3,7 +3,7 @@
 
 # Heart Attack Prediction
 
-This project focuses on predicting the risk of heart attack using a dataset that contains various health-related parameters. The project explores different machine learning models and evaluates their performance to determine the most effective approach for this task.
+This project focuses on predicting the risk of heart attack using a dataset that contains various health-related parameters.
 
 ## Project Structure
 
