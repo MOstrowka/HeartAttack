@@ -5,6 +5,7 @@ import seaborn as sns
 from scipy.stats import shapiro, skew, kurtosis
 from sklearn.preprocessing import StandardScaler
 import os
+import pickle
 
 
 def load_and_clean_data(data_path):
@@ -151,7 +152,13 @@ def preprocess_data(df, output_dir="Data"):
     pd.DataFrame(X_scaled, columns=X.columns).to_csv(X_file_path, index=False)
     pd.DataFrame(y, columns=['HeartAttackRisk']).to_csv(y_file_path, index=False)
 
-    print(f"Preprocessing complete. Preprocessed data saved to {X_file_path} and {y_file_path}\n")
+    # Save the scaler to a pickle file
+    scaler_file_path = os.path.join(output_dir, 'scaler.pkl')
+    with open(scaler_file_path, 'wb') as f:
+        pickle.dump(scaler, f)
+
+    print(f"Preprocessing complete. Preprocessed data saved to {X_file_path} and {y_file_path}")
+    print(f"Scaler saved to {scaler_file_path}\n")
 
 
 def main(data_path='Data/DataRaw.csv'):
