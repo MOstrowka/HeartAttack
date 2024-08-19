@@ -1,1 +1,1 @@
-{"num_layers": 4, "units_0": 176, "dropout_0": 0.0, "learning_rate": 0.0006629053703185273, "batch_size": 64, "units_1": 64, "dropout_1": 0.1, "units_2": 144, "dropout_2": 0.1, "units_3": 208, "dropout_3": 0.30000000000000004}
+{"num_layers": 4, "units_0": 128, "dropout_0": 0.1, "learning_rate": 0.00012982342634960264, "batch_size": 80, "units_1": 16, "dropout_1": 0.0, "units_2": 16, "dropout_2": 0.0, "units_3": 16, "dropout_3": 0.0}

@@ -47,7 +47,7 @@ def train_sklearn_model(model, X, y, params=None, cv=5):
     # Fit the model on the entire dataset
     model.fit(X, y)
 
-    return model, y_pred, y_pred_proba, type(model).__name__
+    return model, y_pred, y_pred_proba, type(model).__name__, best_params
 
 def main():
     """
@@ -85,7 +85,7 @@ def main():
             # Evaluate and log the results
             evaluate_and_save_results(model_name, y, y_pred, y_pred_proba)
             metrics = calculate_metrics(y, y_pred, y_pred_proba)
-            log_to_mlflow(best_model, metrics, run_name=model_name, params=params)
+            log_to_mlflow(best_model, model_name, metrics, run_name=model_name, params=params)
 
             # Save the trained model as .pkl for scikit-learn
             model_save_path = os.path.join(saved_models_dir, f"{model_name}.pkl")

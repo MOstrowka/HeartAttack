@@ -1,7 +1,6 @@
 import os
 import json
 import mlflow
-import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -48,34 +47,47 @@ def calculate_metrics(y_true, y_pred, y_pred_proba):
     }
     return metrics
 
-def log_to_mlflow(model, metrics, run_name="Model", params=None, X_example=None):
+
+def log_to_mlflow(model, model_name, metrics, run_name="Model", params=None):
     """
-    Logowanie modelu, metryk i parametrów w MLflow.
+    Logowanie modelu, metryk i parametrów w MLflow oraz artefaktów takich jak krzywa ROC i macierz konfuzji.
 
     :param model: Wytrenowany model.
     :param metrics: Słownik z obliczonymi metrykami.
     :param run_name: Nazwa uruchomienia MLflow.
     :param params: Słownik z parametrami modelu.
-    :param X_example: Przykładowe dane wejściowe do generowania sygnatury modelu.
     """
-    with mlflow.start_run(run_name=run_name):
+
+    # Load the input (X) and output (y) data
+    X, _ = load_preprocessed_data()
+    y_pred = model.predict(X)
+    X_np = X.to_numpy()
+
+    with mlflow.start_run(run_name=run_name) as run:
         mlflow.log_metrics(metrics)
         if params:
             mlflow.log_params(params)
 
-        # Logowanie modelu Keras
         if hasattr(model, 'save'):
-            if X_example is not None:
-                y_example = model.predict(X_example)
-                signature = infer_signature(X_example, y_example)
-                mlflow.keras.log_model(model, "model", signature=signature, input_example=X_example)
-            else:
-                mlflow.keras.log_model(model, "model")
-        # Logowanie modelu scikit-learn
+            signature = infer_signature(X_np, y_pred)
+            mlflow.keras.log_model(model, "model", signature=signature)
+
         elif hasattr(model, 'predict'):
-            mlflow.sklearn.log_model(model, "model")
+            signature = infer_signature(X, y_pred)
+            mlflow.sklearn.log_model(model, "model", signature=signature)
+
         else:
             raise TypeError("Nieznany typ modelu. Model musi być zgodny z API scikit-learn lub Keras.")
+
+
+        # Logowanie artefaktów z folderu 'Results'
+        artifacts_path = os.path.join("Results", model_name)
+        if os.path.exists(artifacts_path):
+            for file_name in os.listdir(artifacts_path):
+                file_path = os.path.join(artifacts_path, file_name)
+                mlflow.log_artifact(file_path)
+
+        print(f"Model, metrics, and artifacts logged to MLflow run {run.info.run_id}")
 
 
 def save_best_params_to_file(model_name, best_params):
@@ -92,24 +104,30 @@ def save_best_params_to_file(model_name, best_params):
         json.dump(best_params, file)
     print(f"Best parameters of model {model_name} saved to {file_path}")
 
+
 def evaluate_and_save_results(model_name, y_true, y_pred, y_pred_proba):
     """
-    Evaluate the model and save the results (metrics, confusion matrix, ROC curve) to a single Excel sheet.
-    The results will be appended as new rows to the existing sheet.
+    Evaluate the model and save the results (metrics, confusion matrix, ROC curve) to a temporary directory.
+    The results will be later used to log artifacts to MLflow.
 
     :param model_name: Name of the model.
     :param y_true: True labels.
     :param y_pred: Predicted labels.
     :param y_pred_proba: Predicted probabilities.
+    :param dir: Temporary directory to save the evaluation results.
     """
+
+    dir = 'Results'
+    model_dir = os.path.join(dir, model_name)
+    os.makedirs(model_dir, exist_ok=True)
+
     metrics = calculate_metrics(y_true, y_pred, y_pred_proba)
     metrics['model'] = model_name  # Add model name to the metrics
 
     # Save metrics to a single Excel sheet
-    results_dir = 'Results'
-    os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(dir, exist_ok=True)
     metrics_df = pd.DataFrame(metrics, index=[0])
-    metrics_file = os.path.join(results_dir, 'metrics.xlsx')
+    metrics_file = os.path.join(dir, 'metrics.xlsx')
 
     if os.path.exists(metrics_file):
         # Load existing metrics and append the new ones
@@ -130,7 +148,8 @@ def evaluate_and_save_results(model_name, y_true, y_pred, y_pred_proba):
     plt.title(f'{model_name} Confusion Matrix')
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.savefig(os.path.join(results_dir, f'{model_name}_confusion_matrix.png'))
+    cm_file = os.path.join(model_dir, f'{model_name}_confusion_matrix.png')
+    plt.savefig(cm_file)
     plt.close()
 
     # Save ROC curve
@@ -145,7 +164,10 @@ def evaluate_and_save_results(model_name, y_true, y_pred, y_pred_proba):
     plt.ylabel('True Positive Rate')
     plt.title(f'{model_name} ROC Curve')
     plt.legend(loc="lower right")
-    plt.savefig(os.path.join(results_dir, f'{model_name}_roc_curve.png'))
+    roc_file = os.path.join(model_dir, f'{model_name}_roc_curve.png')
+    plt.savefig(roc_file)
     plt.close()
 
-    print(f"Confusion matrix and ROC curve of model {model_name} saved in {results_dir}")
+    print(f"Confusion matrix and ROC curve of model {model_name} saved in {dir}")
+
+    return metrics_file, cm_file, roc_file

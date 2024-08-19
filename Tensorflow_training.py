@@ -7,7 +7,6 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from collections import Counter
-import tempfile
 from utils import (
     evaluate_and_save_results,
     save_best_params_to_file,
@@ -56,7 +55,8 @@ def most_common_params(params_list):
 
     return filtered_params
 
-def train_tensorflow_model(X, y):
+
+def train_tensorflow_model(X, y, model_name='NeuralNetwork'):
     """
     Train a TensorFlow model using Keras Tuner and Stratified K-Fold cross-validation.
 
@@ -69,8 +69,8 @@ def train_tensorflow_model(X, y):
     tuner = kt.RandomSearch(
         build_model,
         objective='val_loss',
-        max_trials=200,
-        executions_per_trial=3,
+        max_trials=1,
+        executions_per_trial=1,
         overwrite=True,
         directory='tuner_results',
         project_name='HeartAttack'
@@ -114,23 +114,16 @@ def train_tensorflow_model(X, y):
 
     metrics = calculate_metrics(all_y_true, all_y_pred, all_y_pred_proba)
     common_params = most_common_params([trial.hyperparameters.values for trial in best_trials])
-    log_to_mlflow(best_model, metrics, run_name="Neural_Network_model", params=common_params)
+    log_to_mlflow(best_model, model_name, metrics, run_name="Neural_Network_model", params=common_params)
 
     # Save the best model in .keras format, without including optimizer
     model_save_dir = 'Models/SavedModels'
-    if not os.path.exists(model_save_dir):
-        os.makedirs(model_save_dir)
-        print(f"Directory {model_save_dir} created.")
-    else:
-        print(f"Directory {model_save_dir} already exists.")
+    os.makedirs(model_save_dir, exist_ok=True)
+    print(f"Directory {model_save_dir} created or already exists.")
 
     model_save_path = os.path.join(model_save_dir, 'NeuralNetwork_best_model.keras')
     best_model.save(model_save_path, include_optimizer=False)
     print(f"Model saved to {model_save_path}")
-
-    # Ensure the directory exists before saving input example
-    temp_dir = tempfile.mkdtemp()
-    mlflow.keras.log_model(best_model, artifact_path=os.path.join(temp_dir, "NeuralNetwork_best_model"))
 
     return best_model, common_params
 
@@ -145,7 +138,6 @@ def main():
     y_pred_proba = best_model.predict(X).flatten()
     y_pred = (y_pred_proba > 0.5).astype(int)
     evaluate_and_save_results('NeuralNetwork', y, y_pred, y_pred_proba)
-
     save_best_params_to_file('NeuralNetwork', best_params)
 
 if __name__ == "__main__":

@@ -32,8 +32,7 @@ def load_and_clean_data(data_path):
 
     # Save the statistics to an Excel file
     stats_output_dir = "EDA"
-    if not os.path.exists(stats_output_dir):
-        os.makedirs(stats_output_dir)
+    os.makedirs(stats_output_dir, exist_ok=True)
 
     stats_file_path = os.path.join(stats_output_dir, "stats.xlsx")
     df.describe().transpose().to_excel(stats_file_path)
@@ -43,8 +42,7 @@ def load_and_clean_data(data_path):
 
 
 def perform_eda(df, output_dir="EDA"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
     numerical_columns = ['Age', 'RestingBloodPressure', 'Cholesterol', 'MaxHeartRate', 'STDepression']
 

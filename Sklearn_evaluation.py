@@ -55,14 +55,14 @@ def main():
         mlflow.set_experiment(experiment_name)
 
         # Train the model and get the best parameters
-        best_model, y_pred, y_pred_proba, model_name = train_sklearn_model(model, X, y, params=params, cv=5)
+        best_model, y_pred, y_pred_proba, model_name, best_params = train_sklearn_model(model, X, y, params=params, cv=5)
 
         # Evaluate and save the results
         evaluate_and_save_results(model_name, y, y_pred, y_pred_proba)
 
         # Log results to MLflow
         metrics = calculate_metrics(y, y_pred, y_pred_proba)
-        log_to_mlflow(best_model, metrics, run_name=model_name)
+        log_to_mlflow(best_model, model_name, metrics, run_name=model_name, params=best_params)
 
         # Save the trained model to a file in pickle format
         model_save_path = os.path.join(saved_models_dir, f"{model_name}.pkl")
