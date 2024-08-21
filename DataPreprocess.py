@@ -8,6 +8,9 @@ import os
 import pickle
 
 
+import pandas as pd
+import os
+
 def load_and_clean_data(data_path):
     # Load data
     df = pd.read_csv(data_path)
@@ -17,6 +20,8 @@ def load_and_clean_data(data_path):
                   'RestingECG', 'MaxHeartRate', 'ExerciseInducedAngina', 'STDepression', 'STSlope',
                   'NumMajorVessels', 'Thalassemia', 'HeartAttackRisk']
 
+    # Shuffle the DataFrame
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     print("Removing wrong data..\n")
     start = len(df)
@@ -40,6 +45,7 @@ def load_and_clean_data(data_path):
     print(f"Descriptive statistics saved to {stats_file_path}\n")
 
     return df
+
 
 
 def perform_eda(df, output_dir="EDA"):
