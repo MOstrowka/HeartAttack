@@ -62,9 +62,9 @@ The project includes several Python scripts that handle different stages of the 
 
 - **`Sklearn_training.py`**: Contains functions for training scikit-learn models, including Logistic Regression, Support Vector Classifier (SVC), and XGBoost. It also performs hyperparameter tuning using `GridSearchCV` and logs the results to MLflow.
 
-- **`Sklearn_evaluation.py`**: Uses the functions from `Sklearn_training.py` to train and evaluate scikit-learn models. It saves the best models and logs their performance metrics.
+- **`Sklearn_evaluation.py`**: Uses the functions from `Sklearn_training.py` to train and evaluate scikit-learn models.
 
-- **`Tensorflow_training.py`**: Trains a Neural Network using TensorFlow and Keras Tuner for hyperparameter optimization. The model is trained using stratified K-fold cross-validation, and the best model is saved and logged to MLflow.
+- **`Tensorflow_training.py`**: Trains a Neural Network using TensorFlow and Keras Tuner for hyperparameter optimization. The model is trained using stratified K-fold cross-validation, and the best model is logged to MLflow.
 
 - **`utils.py`**: A utility script that contains helper functions used across the project, such as loading data, calculating metrics, and logging results to MLflow.
 
