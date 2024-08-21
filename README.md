@@ -48,9 +48,6 @@ This folder contains configurations and results of trained models:
 #### `Models/BestParams/`
 This subfolder contains JSON files that store the best hyperparameters for each model after tuning.
 
-#### `Models/SavedModels/`
-This subfolder includes the serialized versions of the trained models, saved either in `pkl` format (for scikit-learn models) or `keras` format (for the Neural Network).
-
 ### 4. `Results/`
 The `Results` folder holds the evaluation metrics and visualizations for all trained models, including:
 - Summary of model performance metrics in Excel format.
