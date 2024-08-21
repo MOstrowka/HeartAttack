@@ -69,8 +69,8 @@ def train_tensorflow_model(X, y, model_name='NeuralNetwork'):
     tuner = kt.RandomSearch(
         build_model,
         objective='val_loss',
-        max_trials=1,
-        executions_per_trial=1,
+        max_trials=300,
+        executions_per_trial=3,
         overwrite=True,
         directory='tuner_results',
         project_name='HeartAttack'
